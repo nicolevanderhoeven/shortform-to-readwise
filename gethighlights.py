@@ -22,10 +22,14 @@ response = requests.get('https://www.shortform.com/api/highlights/?sort=date', h
 # Parse JSON body
 
 dict = {}
+dict['highlights'] = []
+contents = []
+dictData = {}
 
 obj = json.loads(response.content)
 for item in obj: # data
     for key in obj[item]: # unnamed full highlight obj
+        dictData = {}
         # value = item[key]
         # print(key + ': ' + value)
         # print(key)
@@ -38,55 +42,72 @@ for item in obj: # data
                         for meta in key[prop][param]: # author, cover_image, doc_type, id, title, url_slug
                             value = key[prop][param][meta]
                             if meta == 'author':
-                                dict['author'] = value
+                                dictData['author'] = value
                             if meta == 'cover_image':
-                                dict['imageUrl'] = 'https://' + value.replace('\\','')
+                                dictData['imageUrl'] = 'https:' + value.replace('\\','')
+                                # print(dict['imageUrl'])
                             if meta == 'title':
-                                dict['title'] = 'Shortform-' + value
+                                dictData['title'] = 'Shortform-' + value
                             if meta == 'url_slug':
-                                dict['url'] = 'https://www.shortform.com/app/book/' + value
+                                dictData['source_url'] = 'https://www.shortform.com/app/book/' + value
             if prop == 'created':
                 value = key[prop]
-                dict['date'] = value
+                dictData['highlighted_at'] = value
             if prop == 'quote':
                 value = key[prop]
-                dict['highlight'] = value.replace('\n','')
+                dictData['text'] = value.replace('\n','')
             if prop == 'text':
                 value = key[prop]
-                dict['note'] = ' ' + value
+                if value != '':
+                    dictData['note'] = value
 
-        # Create CSV
+        # Create CSV for logging
         # with open(filePath + '/highlights.csv', 'a') as output_file:
         #     output_file.write('\n"' + dict['highlight'] + '",' + dict['title'] + ',' + dict['author'] + ',"' + dict['url'] + '","' + dict['note'] + '","","' + dict['date'] + '"')
 
+        # Add highlights data to dictionary
+
+        # contents.append(dictData)
+        if dictData != {}:
+            dict['highlights'].append(dictData)
+
+
         # Send data to Readwise
-        body = {
-            'highlights': [
-                {
-                    'text': dict['highlight'],
-                    'title': dict['title'],
-                    'author': dict['author'],
-                    'image_url': dict['imageUrl'],
-                    'source_url': dict['url'],
-                    'source_type': 'book',
-                    'note': dict['note'],
-                    'highlighted_at': dict['date']
-                },
-            ],
-        }
-        response = requests.post(
-            url=readwiseUrl,
-            headers={"Authorization": "Token " + readwiseToken},
-            json={
-                'highlights': [{
-                        'text': dict['highlight'],
-                        'title': dict['title'],
-                        'author': dict['author'],
-                        'image_url': dict['imageUrl'],
-                        'source_url': dict['url'],
-                        'source_type': 'book',
-                        'highlighted_at': dict['date'],
-                }]
-            }
-        )
-        print(response.content)
+        # body = {
+        #     'highlights': [
+        #         {
+        #             'text': dict['highlight'],
+        #             'title': dict['title'],
+        #             'author': dict['author'],
+        #             'image_url': dict['imageUrl'],
+        #             'source_url': dict['url'],
+        #             'source_type': 'book',
+        #             'note': dict['note'],
+        #             'highlighted_at': dict['date']
+        #         },
+        #     ],
+        # }
+        # response = requests.post(
+        #     url=readwiseUrl,
+        #     headers={"Authorization": "Token " + readwiseToken},
+        #     json={
+        #         'highlights': [{
+        #                 'text': dict['highlight'],
+        #                 'title': dict['title'],
+        #                 'author': dict['author'],
+        #                 'image_url': dict['imageUrl'],
+        #                 'source_url': dict['url'],
+        #                 'source_type': 'book',
+        #                 'highlighted_at': dict['date'],
+        #         }]
+        #     }
+        # )
+
+# print(json.dumps(dict))
+
+response = requests.post(
+    url=readwiseUrl,
+    headers={"Authorization": "Token " + readwiseToken},
+    json=dict
+)
+print(response.content)
