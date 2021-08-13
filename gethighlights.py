@@ -69,6 +69,7 @@ for item in obj: # data
 
         # contents.append(dictData)
         if dictData != {}:
+            dictData['source_type'] = 'book'
             dict['highlights'].append(dictData)
 
 
