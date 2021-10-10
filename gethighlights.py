@@ -5,6 +5,7 @@ import requests
 import calendar
 import time
 import json
+import datetime
 
 from variables import authToken, readwiseToken
 
@@ -15,7 +16,7 @@ contents = []
 dictData = {}
 
 # Get highlights
-response = requests.get('https://www.shortform.com/api/highlights/?sort=date', headers={"Authorization": "Basic " + authToken})
+response = requests.get('https://www.shortform.com/api/highlights/?sort=date', headers={"Authorization": "Basic " + authToken, "X-Sf-Client": "11.7.0"})
 
 # Parse JSON body
 obj = json.loads(response.content)
@@ -36,8 +37,20 @@ for item in obj: # data
                                 dictData['title'] = 'Shortform-' + value
                             if meta == 'url_slug':
                                 dictData['source_url'] = 'https://www.shortform.com/app/book/' + value
+                    if param == 'order':
+                        dictData['location'] = key[prop][param]
+                        dictData['location_type'] = 'page'
             if prop == 'created':
-                value = key[prop]
+                # value = key[prop]
+                # Shortform date format: 2021-08-14T21:14:43.107973+00:00
+                # Readwise's expected format: 2020-07-14T20:11:24+00:00
+                # Current output format: 2021-09-02T18:56:39+00:00
+                # Turn value into datetime, remove microseconds, convert it to string, and add : in the timezone.
+                value = datetime.datetime.strptime(key[prop], '%Y-%m-%dT%H:%M:%S.%f%z')
+                value = value.replace(microsecond=0)
+                value = value.strftime('%Y-%m-%dT%H:%M:%S%z')
+                tzMins = value[-2:]
+                value = value[:-2] + ':' + tzMins
                 dictData['highlighted_at'] = value
             if prop == 'quote':
                 value = key[prop]
@@ -51,8 +64,10 @@ for item in obj: # data
             dict['highlights'].append(dictData)
 
 # Send highlights to Readwise
-response = requests.post(
-    url=readwiseUrl,
-    headers={"Authorization": "Token " + readwiseToken},
-    json=dict
-)
+# response = requests.post(
+#     url=readwiseUrl,
+#     headers={"Authorization": "Token " + readwiseToken},
+#     json=dict
+# )
+
+print(dict)
